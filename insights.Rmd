@@ -41,11 +41,19 @@ library("tidyr")
 Now let's create a "people" table that describes each person from the survey.
 
 ```{r}
-people <- tibble("pseudonym"=survey$pseudonym, "pseudonym_generator"=survey$pseudonym_generator, "sex"=survey$sex, "major"=survey$academic_major, "academic_level"=survey$academic_level, "year_born"=survey$year_born, "favorite_song"=survey$favorite_song)
+people <- tibble("time_submitted"=survey$time_submitted, "pseudonym"=survey$pseudonym, "pseudonym_generator"=survey$pseudonym_generator, "sex"=survey$sex, "major"=survey$academic_major, "academic_level"=survey$academic_level, "year_born"=survey$year_born, "favorite_song"=survey$favorite_song)
 ```
 
 Now let's create a "favorite songs" table that describes the reported favorite songs.
 
 ```{r}
 favorite_songs <- tibble("pseudonym"=survey$pseudonym, "favorite_song_artist"=survey$favorite_song_artist, "favorite_song"=survey$favorite_song, "favorite_song_link"=survey$favorite_song_link)
+```
+
+```{r eval=FALSE}
+library("readr")
+```
+
+```{r}
+people$time_submitted <-parse_datetime(people$time_submitted, format="%m/%d/%y %H:%M")
 ```
