@@ -29,6 +29,8 @@ colnames(survey)[colnames(survey) == "Which musical instruments/talents do you p
 colnames(survey)[colnames(survey) == "Artist"] <- "favorite_song_artist"
 colnames(survey)[colnames(survey) == "Song"] <- "favorite_song"
 colnames(survey)[colnames(survey) == "Link to song (on Youtube or Vimeo)"] <- "favorite_song_link"
+colnames(preferences)[colnames(preferences) == "Timestamp"] <- "time_submitted"
+colnames(preferences)[colnames(preferences) == "What was your pseudonym?"] <- "pseudonym"
 ```
 
 Now let's load some libraries for tidying the data.
@@ -38,10 +40,10 @@ library("dplyr")
 library("tidyr")
 ```
 
-Now let's create a "people" table that describes each person from the survey.
+Now let's create a "person" table that describes each person from the survey.
 
 ```{r}
-people <- tibble("time_submitted"=survey$time_submitted, "pseudonym"=survey$pseudonym, "pseudonym_generator"=survey$pseudonym_generator, "sex"=survey$sex, "major"=survey$academic_major, "academic_level"=survey$academic_level, "year_born"=survey$year_born, "favorite_song"=survey$favorite_song)
+person <- tibble("time_submitted"=survey$time_submitted, "pseudonym"=survey$pseudonym, "pseudonym_generator"=survey$pseudonym_generator, "sex"=survey$sex, "major"=survey$academic_major, "academic_level"=survey$academic_level, "year_born"=survey$year_born, "favorite_song"=survey$favorite_song)
 ```
 
 Now let's create a "favorite songs" table that describes the reported favorite songs.
@@ -50,10 +52,32 @@ Now let's create a "favorite songs" table that describes the reported favorite s
 favorite_songs <- tibble("pseudonym"=survey$pseudonym, "favorite_song_artist"=survey$favorite_song_artist, "favorite_song"=survey$favorite_song, "favorite_song_link"=survey$favorite_song_link)
 ```
 
+Now let's create a "ratings" table that describes the rating each person gave each song.
+
+```{r}
+ratings <- subset(gather(preferences, "artist_song", "rating", 3:45), select = -c(time_submitted))
+```
+
+Now let's standardize the timestamps in our person table.
+
 ```{r eval=FALSE}
 library("readr")
 ```
 
 ```{r}
-people$time_submitted <-parse_datetime(people$time_submitted, format="%m/%d/%y %H:%M")
+person$time_submitted <-parse_datetime(person$time_submitted, format="%m/%d/%y %H:%M")
 ```
+
+Now let's factorize the variables that should be factorized. Major needs to be cleaned slightly so we'll do that as well.
+
+```{r}
+person$pseudonym_generator <- as.factor(person$pseudonym_generator)
+person$sex <- as.factor(person$sex)
+person$major[person$major == "Computer information systems"] <- "Computer Information Systems"
+person$major <- as.factor(person$major)
+person$academic_level <- as.factor(person$academic_level)
+ratings$pseudonym <- as.factor(ratings$pseudonym)
+ratings$artist_song <- as.factor(ratings$artist_song)
+```
+
+Now our data is ready for analysis.
