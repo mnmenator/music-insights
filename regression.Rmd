@@ -1,0 +1,87 @@
+---
+title: "Music Insights Project, part 2"
+output: 
+  html_document:
+    df_print: paged
+---
+
+```{r echo=FALSE, message=FALSE, error=FALSE, warning=FALSE, results='hide'}
+include <- function(library_name){
+  if( !(library_name %in% installed.packages()) )
+    install.packages(library_name) 
+  library(library_name, character.only=TRUE)
+}
+include("tidyverse")
+include("knitr")
+```
+
+Let's start by loading in the tidied data from our previous analysis.
+
+```{r message=FALSE, error=FALSE, warning=FALSE, results='hide'}
+purl("insights.Rmd", output = "part1.r")
+source("part1.r")
+```
+
+To pick up where we left off, we build two tables. One defining each person from the survey:
+
+```{r}
+print(person)
+```
+
+And one defining each rating given to every song:
+
+```{r}
+print(ratings)
+```
+
+Let's figure out what each person's average rating was. This might be helpful for building a model later.
+
+```{r}
+averages <- ratings %>%
+            group_by(pseudonym) %>%
+            summarize(mean_rating=mean(rating))
+```
+
+One person didn't give any ratings, so we'll remove them from the table.
+
+```{r}
+person <- filter(person, !(pseudonym=="Heroes War"))
+```
+
+Let's add the average ratings that we collected to our person table.
+
+```{r}
+person$average_rating <- averages$mean_rating
+```
+
+One person didn't give their age, and this NA will interfere with our model later, so we'll remove them from the table.
+
+```{r}
+person <- na.omit(person)
+```
+
+Let's use average_rating as our dependent variable and use a model and multiple linear regression to try and predict it.
+
+We'll start by loading the required library and setting our seed so our analysis will be reproducible.
+
+```{r, warning=FALSE}
+suppressMessages(include("caret"))
+set.seed(385)
+```
+
+We will utilize cross validation by randomly assigning each person to one of either a training or testing set.
+
+```{r}
+sample_selection <- createDataPartition(person$average_rating, p=.75, list=FALSE)
+train <- person[sample_selection, ]
+test <- person[-sample_selection, ]
+```
+
+Now, using  we will build a linear model and perform linear regression on our model. Each person has a unique pseudonym and favorite song, so it makes little sense to include them as possible predictors, not to mention that they will clutter up our summary. We will check all other variables.
+
+```{r}
+train_model <- lm(average_rating ~ time_submitted + pseudonym_generator + sex + major + academic_level + year_born, data=train)
+summary(train_model)
+```
+
+Our overall p-value is > .05, so this model as a whole is not a good predictor. What's more, each of our independent variables has an individual p-value that is > .05. Therefore, we conclude that none of our variables are good predictors for average_rating.

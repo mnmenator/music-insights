@@ -1,13 +1,15 @@
 ---
 title: "Music Insights"
 author: "Michael Messmer"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 First, we need to use the tidyverse library for importing and manipulating our data.
 
-```{r eval=FALSE}
-install.packages("tidyverse")
+```{r results="hide"}
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 library("tidyverse")
 
 survey <- read_csv("https://raw.githubusercontent.com/introdsci/MusicSurvey/master/music-survey.csv")
@@ -35,7 +37,7 @@ colnames(preferences)[colnames(preferences) == "What was your pseudonym?"] <- "p
 
 Now let's load some libraries for tidying the data.
 
-```{r eval=FALSE}
+```{r message=FALSE}
 library("dplyr")
 library("tidyr")
 ```
@@ -60,7 +62,7 @@ ratings <- subset(gather(preferences, "artist_song", "rating", 3:45), select = -
 
 Now let's standardize the timestamps in our person table.
 
-```{r eval=FALSE}
+```{r message=FALSE}
 library("readr")
 ```
 
@@ -81,3 +83,26 @@ ratings$artist_song <- as.factor(ratings$artist_song)
 ```
 
 Now our data is ready for analysis.
+
+```{r}
+suppressMessages(library(ggplot2))
+
+ratings_plot <- ggplot(data = ratings, aes(rating)) + geom_histogram(bins = 10) + scale_x_continuous(breaks = 1:10)
+person_plot <- ggplot(data = ratings, aes(pseudonym, rating)) + geom_boxplot() + labs(x = "Pseudonym", y = "Rating") + theme(axis.text.x=element_text(angle=90, hjust=1))
+```
+
+```{r}
+joined <- ratings
+
+joined$artist_song <- as.character(joined$artist_song)
+joined$artist_song[joined$artist_song == "Arctic Monkeys Arabella"] <- "\tArctic Monkeys Arabella"
+joined$artist_song <- str_extract(joined$artist_song, regex("\t(.*)"))
+joined$artist_song <- substr(joined$artist_song, start=2, stop=1000000)
+joined <- semi_join(joined, person, by=c("pseudonym", "artist_song" = "favorite_song"))
+colnames(joined)[colnames(joined) == "artist_song"] <- "favorite_song"
+
+#Assume that duplicates are result of someone using the wrong pseudonym
+#Also assume that the higher rating of the favorite song is the true rating
+joined <- filter(joined, !(pseudonym=="Band War" & rating==5))
+joined <- filter(joined, !(pseudonym=="Angel Angel" & rating==2))
+```
